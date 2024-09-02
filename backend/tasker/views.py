@@ -27,34 +27,32 @@ class TaskUpdate(generics.RetrieveUpdateAPIView):
     def get_serializer_class(self):
         class UpdateTaskSerializer(TaskSerializer):
             class Meta(TaskSerializer.Meta):
-                fields = ['title', 'description', 'responsible', 'status']
+                fields = ["title", "description", "responsible", "status", "completed_at",]
+
         return UpdateTaskSerializer
-
-    def perform_update(self, serializer):
-        if self.get_object().pk:
-            serializer.validated_data.pop('planned_effort', None)
-            serializer.errors['planned_effort'] = 'This field cannot be modified after creation'
-
+    
+    def update(self, request, *args, **kwargs):
         task = self.get_object()
-        current_status = self.get_object().status
-        new_status = serializer.validated_data.get('status')
+        new_status = request.data.get('status')
 
-        if current_status == 'in_progress' and new_status == 'completed':
-            task.mark_as_completed()
-        elif current_status == 'assigned' and new_status == 'in_progress':
-            pass  # Разрешаем изменение статуса на "В процессе"
-        elif current_status == 'in_progress' and new_status == 'paused':
-            pass  # Разрешаем изменение статуса на "Приостановлено"
-        else:
-            serializer.errors['status'] = 'Invalid status transition'
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            serializer.save()
-        except ValidationError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        if new_status:
+            if not task.is_valid_status_transition(new_status):
+                return Response({"error": "Invalid status transition."}, status=status.HTTP_400_BAD_REQUEST)
             
+            if task.status == "in_progress" and new_status == "completed":
+                for subtask in task.subtask.all():
+                    if not subtask.is_valid_status_transition(new_status):
+                        return Response({"error": "Invalid status transition. Subtasks must be 'in_progress' before parent"}, status=status.HTTP_400_BAD_REQUEST)
 
+            if task.status == "in_progress" and new_status == "completed":
+                task.mark_as_completed()
+                for subtask in task.subtask.all():
+                    subtask.mark_as_completed()
+                return Response(self.get_serializer(task).data, status=status.HTTP_200_OK)
+
+            task.status = new_status
+            task.save()
+            return Response(self.get_serializer(task).data, status=status.HTTP_200_OK)
 
 
 class TaskDelete(generics.DestroyAPIView):
@@ -65,3 +63,16 @@ class TaskDelete(generics.DestroyAPIView):
 class TaskCreate(generics.CreateAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
+
+    def get_serializer_class(self):
+        class CreateTaskSerializer(TaskSerializer):
+            class Meta(TaskSerializer.Meta):
+                fields = [
+                    "title",
+                    "description",
+                    "responsible",
+                    "planned_effort",
+                    "parent",
+                ]
+
+        return CreateTaskSerializer
