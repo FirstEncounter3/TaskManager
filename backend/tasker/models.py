@@ -39,6 +39,16 @@ class Task(models.Model):
     def set_time_completed(self):
         self.completed_at = timezone.now()
 
+    def is_valid_status_transition(self, new_status):
+        current_status = self.status
+        if current_status == "in_progress" and new_status == "completed":
+            return True
+        elif current_status == "assigned" and new_status == "in_progress":
+            return True
+        elif current_status == "in_progress" and new_status == "paused":
+            return True
+        return False
+
     def mark_as_completed(self):
         self.status = 'completed'
         self.set_time_completed()
