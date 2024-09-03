@@ -1,6 +1,5 @@
-from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 
@@ -61,6 +60,8 @@ class Task(models.Model):
             return True
         elif current_status == "completed" and new_status == "completed":
             return True
+        elif current_status == "paused" and new_status == "completed":
+            return True
 
         return False
 
@@ -78,3 +79,12 @@ def signal_parent_actual_effort_recount(sender, instance, **kwargs):
     if instance.parent:
         instance.parent.parent_actual_effort_recount()
         instance.parent.save()
+
+@receiver(post_delete, sender=Task)
+def signal_parent_actual_effort_recount_on_delete(sender, instance, **kwargs):
+    try:
+        if instance.parent:
+            instance.parent.parent_actual_effort_recount()
+            instance.parent.save()
+    except Task.DoesNotExist:
+        pass
