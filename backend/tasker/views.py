@@ -44,7 +44,7 @@ class TaskUpdate(generics.RetrieveUpdateAPIView):
         if new_status:
             if not task.is_valid_status_transition(new_status):
                 return Response(
-                    {"error": "Invalid status transition."},
+                    {"error": "Invalid status transition. Main task must be 'in_progress' before can be completed or paused."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -53,12 +53,12 @@ class TaskUpdate(generics.RetrieveUpdateAPIView):
                     if not subtask.is_valid_status_transition(new_status):
                         return Response(
                             {
-                                "error": "Invalid status transition. Subtasks must be 'in_progress' before parent"
+                                "error": "Invalid status transition. All subtasks must be 'in_progress' before can be completed or paused."
                             },
                             status=status.HTTP_400_BAD_REQUEST,
                         )
 
-            if task.status == "in_progress" and new_status == "completed":
+            if (task.status == "in_progress" or task.status == "paused") and new_status == "completed":
                 task.mark_as_completed()
                 for subtask in task.subtask.all():
                     subtask.mark_as_completed()
