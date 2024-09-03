@@ -27,28 +27,44 @@ class TaskUpdate(generics.RetrieveUpdateAPIView):
     def get_serializer_class(self):
         class UpdateTaskSerializer(TaskSerializer):
             class Meta(TaskSerializer.Meta):
-                fields = ["title", "description", "responsible", "status", "completed_at",]
+                fields = [
+                    "title",
+                    "description",
+                    "responsible",
+                    "status",
+                    "completed_at",
+                ]
 
         return UpdateTaskSerializer
-    
+
     def update(self, request, *args, **kwargs):
         task = self.get_object()
-        new_status = request.data.get('status')
+        new_status = request.data.get("status")
 
         if new_status:
             if not task.is_valid_status_transition(new_status):
-                return Response({"error": "Invalid status transition."}, status=status.HTTP_400_BAD_REQUEST)
-            
+                return Response(
+                    {"error": "Invalid status transition."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             if task.status == "in_progress" and new_status == "completed":
                 for subtask in task.subtask.all():
                     if not subtask.is_valid_status_transition(new_status):
-                        return Response({"error": "Invalid status transition. Subtasks must be 'in_progress' before parent"}, status=status.HTTP_400_BAD_REQUEST)
+                        return Response(
+                            {
+                                "error": "Invalid status transition. Subtasks must be 'in_progress' before parent"
+                            },
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
 
             if task.status == "in_progress" and new_status == "completed":
                 task.mark_as_completed()
                 for subtask in task.subtask.all():
                     subtask.mark_as_completed()
-                return Response(self.get_serializer(task).data, status=status.HTTP_200_OK)
+                return Response(
+                    self.get_serializer(task).data, status=status.HTTP_200_OK
+                )
 
             task.status = new_status
             task.save()
