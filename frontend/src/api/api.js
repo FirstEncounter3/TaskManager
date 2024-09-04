@@ -16,7 +16,7 @@ const getTask = async (id) => {
 
 
 const createTask = async (task) => {
-    const response = await axios.post(`${baseUrl}`, task);
+    const response = await axios.post(`${baseUrl}/create`, task);
     return response.data;
 };
 
