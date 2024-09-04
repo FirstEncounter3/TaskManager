@@ -1,5 +1,11 @@
 import React from "react";
 
-function App() {return (<div>Hello from base app</div>)}
+import TaskList from "../TasksList/TaskList";
+
+function App() {
+    return (
+        <TaskList />
+    );
+}
 
 export default App;
