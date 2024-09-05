@@ -1,0 +1,12 @@
+.task-list-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+    align-items: center;
+    gap: 10px;
+}
+
+.task-list {
+    background-color: darkslategrey;
+    border: 1px solid black;
+}
