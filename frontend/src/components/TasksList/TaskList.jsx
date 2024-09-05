@@ -1,70 +1,81 @@
 import React, { useState, useEffect } from "react";
 
-import { getTasks } from "../../api/api";
+import { getTasks, getTask } from "../../api/api";
 
+import TaskInfo from "../TaskInfo/TaskInfo";
+
+import "./TaskList.css";
 
 const TaskList = () => {
     const [tasks, setTasks] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [warningMessage, setWarningMessage] = useState("");
+    const [taskInfo, setTaskInfo] = useState(null);
+
+    const taskPrepare = (tasks) => {
+        tasks.map((task) => {
+            if (!task.parent) {
+                task.level = 0;
+            } else {
+                const parentTask = tasks.find((t) => t.id === task.parent);
+                if (parentTask) {
+                    task.level = parentTask.level + 1;
+                } else {
+                    task.level = 0;
+                }
+            }
+            return task;
+        });
+
+        return tasks;
+    };
 
     useEffect(() => {
         getTasks()
             .then((data) => {
-                setTasks(data);
-                console.log(data);
+                setTasks(taskPrepare(data));
                 setIsLoading(false);
             })
             .catch((error) => {
                 console.log(error);
-                setWarningMessage(`API is not available. Check the api status. Error: ${error.message}`);
+                setWarningMessage(
+                    `API is not available. Check the api status. Error: ${error.message}`
+                );
                 setIsLoading(false);
             });
     }, []);
 
-    const prepareParentTasks = () => {
-        const taskParentWithSubtasks = {};
-        tasks.forEach((task) => {
-          if (task.parent === null) {
-            taskParentWithSubtasks[task.id] = task.title;
-          } else {
-            if (!taskParentWithSubtasks[task.parent]) {
-              taskParentWithSubtasks[task.parent] = [];
-            }
-            // taskParentWithSubtasks[task.parent].push(task.title);
-          }
-        });
-      
-        return taskParentWithSubtasks;
-      };
-      
-
-    if (prepareParentTasks()) {
-        console.log(prepareParentTasks())
-    }
-
+    const getTaskInfo = (id) => {
+        getTask(id)
+            .then((data) => {
+                setTaskInfo(data);
+            })
+            .catch((error) => {
+                console.log(error);
+                setWarningMessage(
+                    `API is not available. Check the api status. Error: ${error.message}`
+                );
+                setIsLoading(false);
+            });
+    };
 
     return (
-        <div className="task-list">
-            <h2>Task List</h2>
-            {warningMessage && <p>{warningMessage}</p>}
-            {isLoading ? (
-                <p>Loading...</p>
-            ) : (
-                <div key={tasks.id}>
-                    <ul>
-                        {tasks.map((task) => (
-                            task.parent ? (
-                                <li key={task.id} style={{ paddingLeft: "20px" }}>{task.title}</li>
-                            ) : (
-                                <li key={task.id}>{task.title}</li>
-                            )
-                        ))}
-                    </ul>
+        <>  
+            <div className="task-list-container">
+                <div className="task-list">
+                    {isLoading && <p>Loading...</p>}
+                    {tasks.map((task) => (
+                        <p key={task.id} style={{ marginLeft: `${task.level * 20}px`, display: task.displayDefault }}>
+                            <button onClick={() => getTaskInfo(task.id)}>{task.title}</button>
+                        </p>
+                    ))}
                 </div>
-            )}
-        </div>
-    );
+                <div className="task-info">
+                    { taskInfo && <TaskInfo taskInfo={taskInfo} /> }
+                </div>
+            </div>
+        </>
+  );
 };
 
 export default TaskList;
