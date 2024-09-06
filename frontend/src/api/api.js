@@ -22,13 +22,13 @@ const createTask = async (task) => {
 
 
 const updateTask = async (id, task) => {
-    const response = await axios.put(`${baseUrl}/${id}/`, task);
+    const response = await axios.put(`${baseUrl}/${id}/update/`, task);
     return response.data;
 };
 
 
 const deleteTask = async (id) => {
-    const response = await axios.delete(`${baseUrl}/${id}/`);
+    const response = await axios.delete(`${baseUrl}/${id}/delete/`);
     return response.data;
 };
 
