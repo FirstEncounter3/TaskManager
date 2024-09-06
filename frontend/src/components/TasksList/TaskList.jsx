@@ -75,17 +75,17 @@ const TaskList = () => {
 
     return (
         <>  
-            <button onClick={() => modalOpen()}>Создать</button>
             <div className="task-list-container">
                 <div className="task-list">
                     {isLoading && <p>Loading...</p>}
                     {tasks.map((task) => (
                         <p key={task.id} style={{ marginLeft: `${task.level * 20}px`, display: task.displayDefault }}>
-                            <button onClick={() => getTaskInfo(task.id)}>{task.title}</button>
+                            <button className="task" onClick={() => getTaskInfo(task.id)}>{task.title}</button>
                         </p>
                     ))}
                 </div>
                 <div className="task-info">
+                    <div className="right"><button className="task-button" onClick={() => modalOpen()}>Создать</button></div>
                     { taskInfo && <TaskInfo taskInfo={taskInfo} /> }
                 </div>
             </div>
