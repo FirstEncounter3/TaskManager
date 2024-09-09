@@ -4,6 +4,7 @@ import { getTasks, getTask } from "../../api/api";
 
 import TaskInfo from "../TaskInfo/TaskInfo";
 import ModalCreate from "../ModalCreate/ModalCreate";
+import UserMessage from "../UserMessage/UserMessage";
 
 import "./TaskList.css";
 
@@ -11,6 +12,8 @@ const TaskList = () => {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [warningMessage, setWarningMessage] = useState("");
+  const [messageType, setMessageType] = useState("info");
+  const [messageShow, setMessageShow] = useState(false)
   const [taskInfo, setTaskInfo] = useState(null);
   const [modalShow, setModalShow] = useState(false);
   const [parentList, setParentList] = useState([]);
@@ -60,7 +63,13 @@ const TaskList = () => {
         setWarningMessage(
           `API is not available. Check the api status. Error: ${error.message}`
         );
+        setMessageShow(true);
+        setMessageType("error")
         setIsLoading(false);
+
+        setTimeout(() => {
+            setMessageShow(false);
+        }, 10000);
       });
   }, []);
 
@@ -75,7 +84,13 @@ const TaskList = () => {
         setWarningMessage(
           `API is not available. Check the api status. Error: ${error.message}`
         );
+        setMessageShow(true);
+        setMessageType("error")
         setIsLoading(false);
+
+        setTimeout(() => {
+          setMessageShow(false);
+        }, 10000);
       });
   };
 
@@ -102,14 +117,14 @@ const TaskList = () => {
           </div>
           {tasks.length === 0 ? (
             <h1>
-              Задач не создано. Создайте новую задачу при помощи кнопки
-              "Создать"
+              Задачи не найдены
             </h1>
           ) : (
             taskInfo && <TaskInfo taskInfo={taskInfo} />
           )}
         </div>
       </div>
+      <UserMessage message={warningMessage} type={messageType} messageShow={messageShow} />
       <ModalCreate
         show={modalShow}
         onClose={modalClose}
