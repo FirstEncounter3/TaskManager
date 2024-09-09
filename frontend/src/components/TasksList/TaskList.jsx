@@ -8,89 +8,115 @@ import ModalCreate from "../ModalCreate/ModalCreate";
 import "./TaskList.css";
 
 const TaskList = () => {
-    const [tasks, setTasks] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [warningMessage, setWarningMessage] = useState("");
-    const [taskInfo, setTaskInfo] = useState(null);
-    const [modalShow, setModalShow] = useState(false);
-    const [parentList, setParentList] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [warningMessage, setWarningMessage] = useState("");
+  const [taskInfo, setTaskInfo] = useState(null);
+  const [modalShow, setModalShow] = useState(false);
+  const [parentList, setParentList] = useState([]);
 
-    const taskPrepare = (tasks) => {
-        const parentObj = {}
-        tasks.map((task) => {
-            if (!task.parent) {
-                task.level = 0;
-            } else {
-                const parentTask = tasks.find((t) => t.id === task.parent);
-                if (parentTask) {
-                    task.level = parentTask.level + 1;
-                    parentObj[parentTask.id] = parentTask.title
-                } else {
-                    task.level = 0;
-                }
-            }
-            return task;
-        });
+  const taskPrepare = (tasks) => {
+    const parentObj = {};
+    const taskMap = {};
 
-        setParentList(parentObj)
-        return tasks;
-    };
+    tasks.forEach((task) => {
+      taskMap[task.id] = { ...task, children: [] };
+      if (task.status !== "completed") {
+        parentObj[task.id] = task.title;
+      }
+    });
 
-    useEffect(() => {
-        getTasks()
-            .then((data) => {
-                setTasks(taskPrepare(data));
-                setIsLoading(false);
-            })
-            .catch((error) => {
-                console.log(error);
-                setWarningMessage(
-                    `API is not available. Check the api status. Error: ${error.message}`
-                );
-                setIsLoading(false);
-            });
-    }, []);
+    tasks.forEach((task) => {
+      if (task.parent) {
+        taskMap[task.parent].children.push(taskMap[task.id]);
+      }
+    });
 
-    const getTaskInfo = (id) => {
-        getTask(id)
-            .then((data) => {
-                setTaskInfo(data);
-            })
-            .catch((error) => {
-                console.log(error);
-                setWarningMessage(
-                    `API is not available. Check the api status. Error: ${error.message}`
-                );
-                setIsLoading(false);
-            });
-    };
+    setParentList(parentObj);
+    return Object.values(taskMap).filter((task) => !task.parent);
+  };
 
-    const modalOpen = () => {
-        setModalShow(true)
-    };
+  const renderTasks = (tasks, level = 0) => {
+    return tasks.map((task) => (
+      <div key={task.id} style={{ marginLeft: `${level * 20}px` }}>
+        <button className="task" onClick={() => getTaskInfo(task.id)}>
+          {task.title}
+        </button>
+        {task.children &&
+          task.children.length > 0 &&
+          renderTasks(task.children, level + 1)}
+      </div>
+    ));
+  };
 
-    const modalClose = () => {
-        setModalShow(false)
-    };
+  useEffect(() => {
+    getTasks()
+      .then((data) => {
+        setTasks(taskPrepare(data));
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        console.log(error);
+        setWarningMessage(
+          `API is not available. Check the api status. Error: ${error.message}`
+        );
+        setIsLoading(false);
+      });
+  }, []);
 
-    return (
-        <>  
-            <div className="task-list-container">
-                <div className="task-list">
-                    {isLoading && <p>Loading...</p>}
-                    {tasks.map((task) => (
-                        <p key={task.id} style={{ marginLeft: `${task.level * 20}px`, display: task.displayDefault }}>
-                            <button className="task" onClick={() => getTaskInfo(task.id)}>{task.title}</button>
-                        </p>
-                    ))}
-                </div>
-                <div className="task-info">
-                    <div className="right"><button className="task-button" onClick={() => modalOpen()}>Создать</button></div>
-                    { taskInfo && <TaskInfo taskInfo={taskInfo} /> }
-                </div>
-            </div>
-            <ModalCreate show={modalShow} onClose={modalClose} parent={parentList}/>
-        </>
+  const getTaskInfo = (id) => {
+    getTask(id)
+      .then((data) => {
+        setTaskInfo(data);
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        console.log(error);
+        setWarningMessage(
+          `API is not available. Check the api status. Error: ${error.message}`
+        );
+        setIsLoading(false);
+      });
+  };
+
+  const modalOpen = () => {
+    setModalShow(true);
+  };
+
+  const modalClose = () => {
+    setModalShow(false);
+  };
+
+  return (
+    <>
+      <div className="task-list-container">
+        <div className="task-list">
+          {isLoading && <span className="loader"></span>}
+          {renderTasks(tasks)}
+        </div>
+        <div className="task-info">
+          <div className="right">
+            <button className="task-button" onClick={() => modalOpen()}>
+              Создать
+            </button>
+          </div>
+          {tasks.length === 0 ? (
+            <h1>
+              Задач не создано. Создайте новую задачу при помощи кнопки
+              "Создать"
+            </h1>
+          ) : (
+            taskInfo && <TaskInfo taskInfo={taskInfo} />
+          )}
+        </div>
+      </div>
+      <ModalCreate
+        show={modalShow}
+        onClose={modalClose}
+        parent={parentList}
+        editTask={false}
+      />
+    </>
   );
 };
 
