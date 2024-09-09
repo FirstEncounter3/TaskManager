@@ -1,0 +1,25 @@
+.user-message {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
+}
+
+.user-message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.user-message.warning {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.user-message.info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
