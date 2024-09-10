@@ -29,7 +29,7 @@ const ModalCreate = ({ show, onClose, parent, taskInfo, editTask }) => {
       setParentTask("");
       setStatus("assigned");
     }
-  }, [editTask]);
+  }, [editTask, taskInfo]);
 
   const taskCreator = async () => {
     if (!title || !description || !responsible || !plannedEffort) {
