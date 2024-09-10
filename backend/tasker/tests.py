@@ -65,13 +65,40 @@ class TaskModelTest(TestCase):
         self.assertEqual(self.subtask_for_subtask.completed_at, None)
         self.assertEqual(self.subtask_for_subtask.actual_effort, 1)
 
-    def test_api_parent_task_cannot_be_completed_if_status_is_not_in_progress(self):
-        self.client.defaults['HTTP_ACCEPT'] = 'application/json'
+    def test_subtask_delete(self):
+        self.subtask.delete()
+        self.assertEqual(Task.objects.count(), 1)
 
-        print('Test case: parent task cannot be completed if child is not in progress, assert 400')
+    def test_subtask_for_subtask_delete(self):
+        self.subtask_for_subtask.delete()
+        self.assertEqual(Task.objects.count(), 2)
+
+    def test_api_create_task(self):
+        self.client.defaults["HTTP_ACCEPT"] = "application/json"
+
+        print("Test case: create task, assert 201")
+
+        data = {
+            "title": "Test task",
+            "description": "Test task description",
+            "responsible": "Username1",
+            "planned_effort": 1,
+            "status": "assigned",
+            "parent": None,
+        }
+
+        response = self.client.post("/create/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_api_parent_task_cannot_be_completed_if_status_is_not_in_progress(self):
+        self.client.defaults["HTTP_ACCEPT"] = "application/json"
+
+        print(
+            "Test case: parent task cannot be completed if child is not in progress, assert 400"
+        )
 
         response = self.client.patch(
-           f'/{self.parent_task.id}/update/', {"status": "completed"}, format="json"
+            f"/{self.parent_task.id}/update/", {"status": "completed"}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn(
@@ -79,8 +106,10 @@ class TaskModelTest(TestCase):
             response.data["error"],
         )
 
-    def test_api_parent_task_cannot_be_completed_if_child_is_not_in_progress_but_parent_is(self):
-        self.client.defaults['HTTP_ACCEPT'] = 'application/json'
+    def test_api_parent_task_cannot_be_completed_if_child_is_not_in_progress_but_parent_is(
+        self,
+    ):
+        self.client.defaults["HTTP_ACCEPT"] = "application/json"
 
         print("Test case: parent_task in progress, but childs not, assert 400")
 
@@ -88,7 +117,7 @@ class TaskModelTest(TestCase):
         self.parent_task.save()
 
         response = self.client.patch(
-           f'/{self.parent_task.id}/update/', {"status": "completed"}, format="json"
+            f"/{self.parent_task.id}/update/", {"status": "completed"}, format="json"
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -98,9 +127,11 @@ class TaskModelTest(TestCase):
         )
 
     def test_api_parent_task_can_be_completed_if_conditions_are_met(self):
-        self.client.defaults['HTTP_ACCEPT'] = 'application/json'
+        self.client.defaults["HTTP_ACCEPT"] = "application/json"
 
-        print('Test case: parent task can be completed if conditions are met, assert 200')
+        print(
+            "Test case: parent task can be completed if conditions are met, assert 200"
+        )
 
         self.parent_task.status = "in_progress"
         self.parent_task.save()
@@ -112,19 +143,20 @@ class TaskModelTest(TestCase):
         self.subtask_for_subtask.save()
 
         response = self.client.patch(
-            f'/{self.parent_task.id}/update/', {"status": "completed"}, format="json"
+            f"/{self.parent_task.id}/update/", {"status": "completed"}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "completed")
 
-    
     def test_api_parent_task_cannot_be_paused_if_status_is_not_in_progress(self):
-        self.client.defaults['HTTP_ACCEPT'] = 'application/json'
+        self.client.defaults["HTTP_ACCEPT"] = "application/json"
 
-        print('Test case: parent task cannot be paused if status is not in progress, assert 400')
+        print(
+            "Test case: parent task cannot be paused if status is not in progress, assert 400"
+        )
 
         response = self.client.patch(
-           f'/{self.parent_task.id}/update/', {"status": "paused"}, format="json"
+            f"/{self.parent_task.id}/update/", {"status": "paused"}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn(
@@ -132,16 +164,31 @@ class TaskModelTest(TestCase):
             response.data["error"],
         )
 
-    def test_api_paernt_task_can_be_paused_if_childs_is_not_in_progress(self):
-        self.client.defaults['HTTP_ACCEPT'] = 'application/json'
+    def test_api_parent_task_can_be_paused_if_childs_is_not_in_progress(self):
+        self.client.defaults["HTTP_ACCEPT"] = "application/json"
 
-        print('Test case: parent task can be paused if child is not in progress, assert 200')
+        print(
+            "Test case: parent task can be paused if child is not in progress, assert 200"
+        )
 
         self.parent_task.status = "in_progress"
         self.parent_task.save()
 
         response = self.client.patch(
-           f'/{self.parent_task.id}/update/', {"status": "paused"}, format="json"
+            f"/{self.parent_task.id}/update/", {"status": "paused"}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["status"], "completed")
+        self.assertEqual(response.data["status"], "paused")
+
+    def test_api_update_parent_task(self):
+        self.client.defaults["HTTP_ACCEPT"] = "application/json"
+
+        print("Test case: update parent task, assert 200")
+
+        response = self.client.patch(
+            f"/{self.parent_task.id}/update/",
+            {"title": "New title", "status": "assigned"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["title"], "New title")
