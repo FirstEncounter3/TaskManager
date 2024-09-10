@@ -54,6 +54,8 @@ class Task(models.Model):
 
         if current_status == "in_progress" and new_status == "completed":
             return True
+        elif current_status == new_status:
+            return True
         elif current_status == "assigned" and new_status == "in_progress":
             return True
         elif current_status == "in_progress" and new_status == "paused":
