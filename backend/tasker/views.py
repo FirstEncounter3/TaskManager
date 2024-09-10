@@ -7,6 +7,8 @@ from .serializers import TaskSerializer
 
 from .models import Task
 
+from .utils import all_subtasks_are_valid,  mark_all_subtasks_as_completed
+
 # Create your views here.
 
 
@@ -49,19 +51,17 @@ class TaskUpdate(generics.RetrieveUpdateAPIView):
                 )
 
             if task.status == "in_progress" and new_status == "completed":
-                for subtask in task.subtask.all():
-                    if not subtask.is_valid_status_transition(new_status):
-                        return Response(
-                            {
-                                "error": "Invalid status transition. All subtasks must be 'in_progress' before can be completed or paused."
-                            },
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
+                if not all_subtasks_are_valid(task, new_status):
+                    return Response(
+                        {
+                            "error": "Invalid status transition. All subtasks must be 'in_progress' before can be completed or paused."
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                )
 
             if (task.status == "in_progress" or task.status == "paused") and new_status == "completed":
                 task.mark_as_completed()
-                for subtask in task.subtask.all():
-                    subtask.mark_as_completed()
+                mark_all_subtasks_as_completed(task)
                 return Response(
                     self.get_serializer(task).data, status=status.HTTP_200_OK
                 )
