@@ -66,25 +66,25 @@ class TaskUpdate(generics.RetrieveUpdateAPIView):
                     self.get_serializer(task).data, status=status.HTTP_200_OK
                 )
             
-            for attr, value in request.data.items():
-                if hasattr(task, attr):
-                    if attr == "parent":
-                        if value == '':
-                            setattr(task, attr, None)
-                        else:
-                            try:
-                                parent_task = Task.objects.get(id=value)
-                                setattr(task, attr, parent_task)
-                            except Task.DoesNotExist:
-                                return Response(
-                                    {"error": "Parent task does not exist."},
-                                    status=status.HTTP_400_BAD_REQUEST,
-                                )
+        for attr, value in request.data.items():
+            if hasattr(task, attr):
+                if attr == "parent":
+                    if value == '':
+                        setattr(task, attr, None)
                     else:
-                        setattr(task, attr, value)
-            task.status = new_status
-            task.save()
-            return Response(self.get_serializer(task).data, status=status.HTTP_200_OK)
+                        try:
+                            parent_task = Task.objects.get(id=value)
+                            setattr(task, attr, parent_task)
+                        except Task.DoesNotExist:
+                            return Response(
+                                {"error": "Parent task does not exist."},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
+                else:
+                    setattr(task, attr, value)
+        task.status = new_status
+        task.save()
+        return Response(self.get_serializer(task).data, status=status.HTTP_200_OK)
 
 
 class TaskDelete(generics.DestroyAPIView):
