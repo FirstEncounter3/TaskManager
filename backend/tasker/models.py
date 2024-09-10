@@ -52,20 +52,18 @@ class Task(models.Model):
     def is_valid_status_transition(self, new_status):
         current_status = self.status
 
-        if current_status == "in_progress" and new_status == "completed":
-            return True
-        elif current_status == new_status:
-            return True
-        elif current_status == "assigned" and new_status == "in_progress":
-            return True
-        elif current_status == "in_progress" and new_status == "paused":
-            return True
-        elif current_status == "completed" and new_status == "completed":
-            return True
-        elif current_status == "paused" and new_status == "completed":
-            return True
+        invalid_transitions = {
+            ("assigned", "completed"),
+            ("assigned", "paused"),
+            ("completed", "in_progress"),
+            ("completed", "paused"),
+            ("completed", "assigned"),
+        }
 
-        return False
+        if (current_status, new_status) in invalid_transitions:
+            return False
+
+        return True
 
     def mark_as_completed(self):
         self.status = "completed"
